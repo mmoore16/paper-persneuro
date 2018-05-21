@@ -1,0 +1,333 @@
+---
+title: "Brain-Personality-Symptom Supplementary Analyses"
+author: "Matthew Moore"
+output:
+  html_notebook:
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_float: yes
+    code_folding: hide
+---
+
+These are the supplementary analyses of the Brain-Personality-Symptom report.
+
+```{r init, message=FALSE, warning=FALSE, include=FALSE}
+library('knitr')
+library('Hmisc')
+library('apaTables')
+library('pastecs')
+library('lavaan')
+
+```
+
+#Load in brain-personality-symptom (bps) data sets
+```{r}
+# set location
+datapath <- '/Data/PersNeuro/'
+
+# read in data
+bps <- read.csv(paste0(datapath,"bps.csv"),header=TRUE)
+bps1 <- read.csv(paste0(datapath,"bps1.csv"),header=TRUE)
+bps2 <- read.csv(paste0(datapath,"bps2.csv"),header=TRUE)
+bps3 <- read.csv(paste0(datapath,"bps3.csv"),header=TRUE)
+bps4 <- read.csv(paste0(datapath,"bps4.csv"),header=TRUE)
+
+# extract variables for correlations
+bps5 <- bps[, c(2,3,4,5,6,7,8,9)]
+
+# read in data for each sex
+bps_females <- read.csv(paste0(datapath,"bps_females.csv"),header=TRUE)
+bps_males <- read.csv(paste0(datapath,"bps_males.csv"),header=TRUE)
+
+```
+
+#Univariate plots for questionnaire data
+```{r, fig.height=6, fig.width=6, message=FALSE, warning=FALSE}
+# plot for reappraisal
+plot(bps$reappraisal)
+
+# plot for positive affectivity
+plot(bps$traitpos)
+
+# plot for optimism
+plot(bps$optimism)
+
+# plot for anxiety
+plot(bps$traitanxiety)
+
+# plot for depression
+plot(bps$depression)
+
+```
+
+#Correlation analyses
+```{r, message=FALSE, warning=FALSE}
+# this bit of script adapted from: 
+# http://www.sthda.com/english/wiki/correlation-matrix-a-quick-start-guide-to-analyze-format-and-visualize-a-correlation-matrix-using-r-software
+# cormat : matrix of the correlation coefficients
+# pmat : matrix of the correlation p-values
+flatcorr <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+  )
+}
+
+# correlation
+res2<-rcorr(as.matrix(bps5),type=c("pearson"))
+# extract the correlation coefficients
+res2$r
+# extract p values
+res2$P
+# report r and p values
+flatcorr(res2$r, res2$P)
+
+# summary table of intercorrelations
+apa.cor.table(bps5, filename = "Table1.doc", table.number = 1, show.conf.interval = FALSE, landscape = TRUE)
+
+```
+
+#Sex difference analyses
+```{r, message=FALSE, warning=FALSE}
+# obtain means and standard deviations
+stat.desc(bps_females)
+stat.desc(bps_males)
+
+# independent 2-group t-test for age
+t.test(bps_females$age,bps_males$age)
+
+# independent 2-group t-test for MFC
+t.test(bps_females$rh_mfc,bps_males$rh_mfc)
+
+# independent 2-group t-test for IFC
+t.test(bps_females$lh_ifc,bps_males$lh_ifc)
+
+# independent 2-group t-test for OFC
+t.test(bps_females$lh_ofc,bps_males$lh_ofc)
+
+# independent 2-group t-test for reappraisal
+t.test(bps_females$reappraisal,bps_males$reappraisal)
+
+# independent 2-group t-test for positive affectivity
+t.test(bps_females$traitpos,bps_males$traitpos)
+
+# independent 2-group t-test for optimism
+t.test(bps_females$optimism,bps_males$optimism)
+
+# independent 2-group t-test for anxiety
+t.test(bps_females$traitanxiety,bps_males$traitanxiety)
+
+# independent 2-group t-test for depression
+t.test(bps_females$depression,bps_males$depression)
+
+```
+
+#SEM analyses
+```{r, message=FALSE, warning=FALSE}
+##################################################################################################
+# run SEM model 1 for anxiety with neighboring ROIs
+
+# specify model 1: x is control, m is resilience, y is anxiety
+anx1.model <- ' 
+# latent control
+control =~  rh_frontalpole + lh_parstriangularis + lh_medialorbitofrontal
+# latent resilience
+resilience =~ reappraisal + traitpos + optimism
+# controlling for age and sex
+resilience ~ age + sex
+traitanxiety ~ age + sex
+# a
+resilience ~ a*control
+# b and direct
+traitanxiety ~ b*resilience + c*control
+# indirect effect
+indirect := a*b
+# total effect
+total := c + (a*b)  '
+
+# fit model 1 for anxiety
+anx1_fit <- sem(anx1.model, data=bps1, missing = "ML", likelihood = "wishart", information = "expected")
+
+# display summary output for model 1 for anxiety
+summary(anx1_fit, fit.measures=TRUE, standardized=TRUE)
+standardizedSolution(anx1_fit)
+
+##################################################################################################
+# run SEM model 1 for anxiety with ROIs that are engaged in similar processes
+
+# specify model 1: x is control, m is resilience, y is anxiety
+anx1.model <- ' 
+# latent control
+control =~  rh_superiorparietal + lh_rostralanteriorcingulate + lh_accumbens_area
+# latent resilience
+resilience =~ reappraisal + traitpos + optimism
+# controlling for age and sex
+resilience ~ age + sex
+traitanxiety ~ age + sex
+# a
+resilience ~ a*control
+# b and direct
+traitanxiety ~ b*resilience + c*control
+# indirect effect
+indirect := a*b
+# total effect
+total := c + (a*b)  '
+
+# fit model 1 for anxiety
+anx1_fit <- sem(anx1.model, data=bps2, missing = "ML", likelihood = "wishart", information = "expected")
+
+# display summary output for model 1 for anxiety
+summary(anx1_fit, fit.measures=TRUE, standardized=TRUE)
+standardizedSolution(anx1_fit)
+
+##################################################################################################
+# run SEM model 1 for anxiety with both hemispheres included
+
+# specify model 1: x is control, m is resilience, y is anxiety
+anx1.model <- ' 
+# latent control
+control =~  rh_mfc + lh_mfc + lh_ifc + rh_ifc + lh_ofc + rh_ofc 
+# latent resilience
+resilience =~ reappraisal + traitpos + optimism
+# controlling for age and sex
+resilience ~ age + sex
+traitanxiety ~ age + sex
+# a
+resilience ~ a*control
+# b and direct
+traitanxiety ~ b*resilience + c*control
+# indirect effect
+indirect := a*b
+# total effect
+total := c + (a*b)
+# residual correlations
+rh_mfc ~~ lh_mfc
+lh_ifc ~~ rh_ifc 
+lh_ofc ~~ rh_ofc '
+
+# fit model 1 for anxiety
+anx1_fit <- sem(anx1.model, data=bps3, missing = "ML", likelihood = "wishart", information = "expected")
+
+# display summary output for model 1 for anxiety
+summary(anx1_fit, fit.measures=TRUE, standardized=TRUE)
+standardizedSolution(anx1_fit)
+
+##################################################################################################
+# run SEM model 1 for anxiety with neuroticism included
+
+# specify model 1: x is control, m is resilience, y is anxiety
+anx1.model <- ' 
+# latent control
+control =~  rh_mfc + lh_ifc + lh_ofc
+# latent resilience
+resilience =~ reappraisal + traitpos + optimism + neuroticism
+# controlling for age and sex
+resilience ~ age + sex
+traitanxiety ~ age + sex
+# a
+resilience ~ a*control
+# b and direct
+traitanxiety ~ b*resilience + c*control
+# indirect effect
+indirect := a*b
+# total effect
+total := c + (a*b)  '
+
+# fit model 1 for anxiety
+anx1_fit <- sem(anx1.model, data=bps3, missing = "ML", likelihood = "wishart", information = "expected")
+
+# display summary output for model 1 for anxiety
+summary(anx1_fit, fit.measures=TRUE, standardized=TRUE)
+standardizedSolution(anx1_fit) 
+
+##################################################################################################
+# run SEM model 1 for state anxiety
+
+# specify model 1: x is control, m is resilience, y is anxiety
+anx1.model <- ' 
+# latent control
+control =~  rh_mfc + lh_ifc + lh_ofc
+# latent resilience
+resilience =~ reappraisal + traitpos + optimism
+# controlling for age and sex
+resilience ~ age + sex
+stateanxiety ~ age + sex
+# a
+resilience ~ a*control
+# b and direct
+stateanxiety ~ b*resilience + c*control
+# indirect effect
+indirect := a*b
+# total effect
+total := c + (a*b)  '
+
+# fit model 1 for anxiety
+anx1_fit <- sem(anx1.model, data=bps3, missing = "ML", likelihood = "wishart", information = "expected")
+
+# display summary output for model 1 for anxiety
+summary(anx1_fit, fit.measures=TRUE, standardized=TRUE)
+standardizedSolution(anx1_fit)  
+
+##################################################################################################
+# run SEM model 1 for anxiety with outliers included
+
+# specify model 1: x is control, m is resilience, y is anxiety
+anx1.model <- ' 
+# latent control
+control =~  rh_mfc + lh_ifc + lh_ofc
+# latent resilience
+resilience =~ reappraisal + traitpos + optimism
+# controlling for age and sex
+resilience ~ age + sex
+traitanxiety ~ age + sex
+# a
+resilience ~ a*control
+# b and direct
+traitanxiety ~ b*resilience + c*control
+# indirect effect
+indirect := a*b
+# total effect
+total := c + (a*b)  '
+
+# fit model 1 for anxiety
+anx1_fit <- sem(anx1.model, data=bps4, missing = "ML", likelihood = "wishart", information = "expected")
+
+# display summary output for model 1 for anxiety
+summary(anx1_fit, fit.measures=TRUE, standardized=TRUE)
+standardizedSolution(anx1_fit) 
+
+##################################################################################################
+# run SEM model 1 for depression with outliers included
+
+# specify model 1: x is control, m is resilience, y is depression
+dep1.model <- ' 
+# latent control
+control =~  rh_mfc + lh_ifc + lh_ofc
+# latent resilience
+resilience =~ reappraisal + traitpos + optimism
+# controlling for age and sex
+resilience ~ age + sex
+depression ~ age + sex
+# a
+resilience ~ a*control
+# b and direct
+depression ~ b*resilience + c*control
+# indirect effect
+indirect := a*b
+# total effect
+total := c + (a*b)  '
+
+# fit model 1 for depression
+dep1_fit <- sem(dep1.model, data=bps4, missing = "ML", likelihood = "wishart", information = "expected")
+
+# display summary output for model 1 for depression
+summary(dep1_fit, fit.measures=TRUE, standardized=TRUE)
+standardizedSolution(dep1_fit) 
+
+```
+
+

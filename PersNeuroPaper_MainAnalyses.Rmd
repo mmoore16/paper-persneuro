@@ -1,0 +1,203 @@
+---
+title: "Brain-Personality-Symptom Analyses"
+author: "Matthew Moore"
+output:
+  html_notebook:
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_float: yes
+    code_folding: hide
+---
+
+These are the primary analyses of the Brain-Personality-Symptom report.
+
+```{r init, message=FALSE, warning=FALSE, include=FALSE}
+library('knitr')
+library('lavaan')
+
+```
+
+#Load in brain-personality-symptom (bps) data sets
+```{r}
+# set location
+datapath <- '/Data/PersNeuro/'
+
+# read in data
+bps <- read.csv(paste0(datapath,"bps.csv"),header=TRUE)
+
+```
+
+#SEM analyses
+```{r, message=FALSE, warning=FALSE}
+##################################################################################################
+# run SEM model 1 for anxiety
+
+# specify model 1: x is control, m is resilience, y is anxiety
+anx1.model <- ' 
+# latent control
+control =~ rh_mfc + lh_ifc + lh_ofc
+# latent resilience
+resilience =~ reappraisal + traitpos + optimism
+# controlling for age and sex
+resilience ~ age + sex
+traitanxiety ~ age + sex
+# a
+resilience ~ a*control
+# b and direct
+traitanxiety ~ b*resilience + c*control
+# indirect effect
+indirect := a*b
+# total effect
+total := c + (a*b)  '
+
+# fit model 1 for anxiety
+anx1_fit <- sem(anx1.model, data=bps, missing = "ML", likelihood = "wishart", information = "expected")
+
+# display summary output for model 1 for anxiety
+summary(anx1_fit, fit.measures=TRUE, standardized=TRUE)
+standardizedSolution(anx1_fit)
+
+##################################################################################################
+# run SEM model 1 for depression
+
+# specify model 1: x is control, m is resilience, y is depression
+dep1.model <- ' 
+# latent control
+control =~ rh_mfc + lh_ifc + lh_ofc
+# latent resilience
+resilience =~ reappraisal + traitpos + optimism
+# controlling for age and sex
+resilience ~ age + sex
+depression ~ age + sex
+# a
+resilience ~ a*control
+# b and direct
+depression ~ b*resilience + c*control
+# indirect effect
+indirect := a*b
+# total effect
+total := c + (a*b)  '
+
+# fit model 1 for depression
+dep1_fit <- sem(dep1.model, data=bps, missing = "ML", likelihood = "wishart", information = "expected")
+
+# display summary output for model 1 for depression
+summary(dep1_fit, fit.measures=TRUE, standardized=TRUE)
+standardizedSolution(dep1_fit)
+
+##################################################################################################
+# run SEM model 2 for anxiety
+
+# specify model 2:  x is anxiety, m is resilience, y is control
+anx2.model <- ' 
+# latent control
+control =~ rh_mfc + lh_ifc + lh_ofc
+# latent resilience
+resilience =~ reappraisal + traitpos + optimism
+# controlling for age and sex
+resilience ~ age + sex
+control ~ age + sex
+# a
+resilience ~ a*traitanxiety
+# b and direct
+control ~ b*resilience + c*traitanxiety
+# indirect effect
+indirect := a*b
+# total effect
+total := c + (a*b)  '
+
+# fit model 2 for anxiety
+anx2_fit <- sem(anx2.model, data=bps, missing = "ML", likelihood = "wishart", information = "expected")
+
+# display summary output for model 2 for anxiety
+summary(anx2_fit, fit.measures=TRUE, standardized=TRUE)
+standardizedSolution(anx2_fit)
+
+##################################################################################################
+# run SEM model 3 for anxiety
+
+# specify model 3:  x is resilience, m is control, y is anxiety
+anx3.model <- ' 
+# latent control
+control =~ rh_mfc + lh_ifc + lh_ofc
+# latent resilience
+resilience =~ reappraisal + traitpos + optimism
+# controlling for age and sex
+control ~ age + sex
+traitanxiety ~ age + sex
+# a
+control ~ a*resilience
+# b and direct
+traitanxiety ~ b*control + c*resilience
+# indirect effect
+indirect := a*b
+# total effect
+total := c + (a*b)  '
+
+# fit model 3 for anxiety
+anx3_fit <- sem(anx3.model, data=bps, missing = "ML", likelihood = "wishart", information = "expected")
+
+# display summary output for model 3 for anxiety
+summary(anx3_fit, fit.measures=TRUE, standardized=TRUE)
+standardizedSolution(anx3_fit)
+
+##################################################################################################
+# run SEM model 2 for depression
+
+# specify model 2:  x is depression, m is resilience, y is control
+dep2.model <- ' 
+# latent control
+control =~ rh_mfc + lh_ifc + lh_ofc
+# latent resilience
+resilience =~ reappraisal + traitpos + optimism
+# controlling for age and sex
+resilience ~ age + sex
+control ~ age + sex
+# a
+resilience ~ a*depression
+# b and direct
+control ~ b*resilience + c*depression
+# indirect effect
+indirect := a*b
+# total effect
+total := c + (a*b)  '
+
+# fit model 2 for depression
+dep2_fit <- sem(dep2.model, data=bps, missing = "ML", likelihood = "wishart", information = "expected")
+
+# display summary output for model 2 for depression
+summary(dep2_fit, fit.measures=TRUE, standardized=TRUE)
+standardizedSolution(dep2_fit)
+
+##################################################################################################
+# run SEM model 3 for depression
+
+# specify model 3:  x is resilience, m is control, y is depression
+dep3.model <- ' 
+# latent control
+control =~ rh_mfc + lh_ifc + lh_ofc
+# latent resilience
+resilience =~ reappraisal + traitpos + optimism
+# controlling for age and sex
+control ~ age + sex
+depression ~ age + sex
+# a
+control ~ a*resilience
+# b and direct
+depression ~ b*control + c*resilience
+# indirect effect
+indirect := a*b
+# total effect
+total := c + (a*b)  '
+
+# fit model 3 for depression
+dep3_fit <- sem(dep3.model, data=bps, missing = "ML", likelihood = "wishart", information = "expected")
+
+# display summary output for model 3 for depression
+summary(dep3_fit, fit.measures=TRUE, standardized=TRUE)
+standardizedSolution(dep3_fit)
+
+```
+
+
